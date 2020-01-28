@@ -1,6 +1,10 @@
 # Arduino LED Control
 Arduino code for controlling LEDs
 
+See working animation code on a Paramotor Frame: https://youtu.be/QCYgQ3sWGrA
+![Paramotor LED Lights](images/20191225_173926_HDR.jpg)
+![Paramotor LED Lights](images/20191225_191420.jpg)
+
 My LED Lights: ws2815
 https://www.amazon.com/gp/product/B07SFTK99V/
 
