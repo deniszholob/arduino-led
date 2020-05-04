@@ -1,14 +1,54 @@
 # Arduino LED Control
-Arduino code for controlling LEDs
+Arduino code for controlling LEDs:  
+See working [animation code on a Paramotor Frame](https://youtu.be/QCYgQ3sWGrA) (youtube video)
 
-See working animation code on a Paramotor Frame: https://youtu.be/QCYgQ3sWGrA
-![Paramotor LED Lights](images/20191225_173926_HDR.jpg)
-![Paramotor LED Lights](images/20191225_191420.jpg)
+![Paramotor LED Lights](images/led-ac-demo-code.jpg)
+![Paramotor LED Lights Purple](images/led-ac-demo-purple.jpg)
+![Paramotor LED Lights Flight](images/led-ac-demo-flight.jpg)
 
-My LED Lights: ws2815
-https://www.amazon.com/gp/product/B07SFTK99V/
+---------------------------------------
 
-## Arduino
+## Hardware/Build
+* LED Lights 2x: [ws2815](https://www.amazon.com/gp/product/B07SFTK99V/)
+* Controller: [Arduino Nano](https://www.amazon.com/gp/product/B0713XK923/)
+* Battery: [12V 6000mAh](https://www.amazon.com/dp/B00ME3ZH7C/)
+* More gear linked on [my website](https://deniszholob.com/ppg)
+
+### PPG AC Nitro200 Wiring
+Global LED array => 270 total
+Purchased 2 rolls, 150 per led roll = 300 total => 30 left over
+
+* 3 sections
+  * Left
+  * Top
+  * Right
+* 2 clusters per section
+  * Left
+  * Right
+* 3 Nodes per cluster
+  * Front
+  * Back
+  * Side
+* 15 leds per node
+
+![LED Air Conception Wiring](images/led-ac-wiring.jpg)
+
+### Soldering
+LED strips had 4 connections:
+
+| Strip Connection | Arduino Pin |
+| ---------------- | ----------- |
+| Ground | GND (Shared) |
+| 12v | VIN (Shared) |
+| Data | D6 (Output) |
+| Data Backup | D6 (Output) |
+
+![LED Node Soldering](images/led-node-solder.jpg)
+![LED Section](images/led-section.jpg)
+
+
+## Resources
+### Arduino
 * https://www.arduino.cc/reference/en/language/structure/pointer-access-operators/dereference/
 * https://learn.sparkfun.com/tutorials/data-types-in-arduino/all
 * https://www.tutorialspoint.com/cplusplus/cpp_data_structures.htm
@@ -22,13 +62,13 @@ https://www.amazon.com/gp/product/B07SFTK99V/
 * https://www.arduino.cc/en/tutorial/pushbutton
 * http://ediy.com.my/index.php/tutorials/item/95-arduino-function-with-optional-arguments
 
-## FastLED
+### FastLED
 * https://github.com/FastLED/FastLED
 * https://github.com/FastLED/FastLED/wiki/Overview
 * https://github.com/FastLED/FastLED/wiki/Controlling-leds
 * http://fastled.io/docs/3.1/group___colorutils.html#ga3144bb2bb66aeed33e20f4fdd6cc1a98
 
-## Code Ref
+### Code Ref
 * https://www.youtube.com/results?search_query=FastLED+programming+patterns+tutorial
 * https://www.youtube.com/watch?v=EcMKditEVtY
 * http://hamburgtech.de/downloads/
@@ -36,28 +76,10 @@ https://www.amazon.com/gp/product/B07SFTK99V/
 * https://www.tweaking4all.com/hardware/arduino/adruino-led-strip-effects/#LEDStripEffectMeteorRain
 * http://yaab-arduino.blogspot.com/p/ala.html
 
-## Color
+### Color
 * https://sighack.com/post/procedural-color-algorithms-color-variations
 
-## Sim
+### Sim
 * https://dougalcampbell.github.io/LEDStrip/
 * https://github.com/dougalcampbell/LEDStrip
 * https://forum.arduino.cc/index.php?topic=534060.0
-
-## PPG AC Nitro200 Wiring
-Global LED array => 270 total
-Purchased 2 rolls, 150 per led roll = 300 total => 30 left over
-
-* 3 sections
-  * Left
-  * Top
-  * Right
-* 2 clusters per section
-  * Left
-  * Right
-* 3 Nodes per section
-  * Front
-  * Back
-  * Side
-* 15 leds per node
-
