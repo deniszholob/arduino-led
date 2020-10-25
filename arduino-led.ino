@@ -1,23 +1,68 @@
 // ****************** LIBRARY SECTION ************************************* //
+#include <Arduino.h>
 #include <FastLED.h> //https://github.com/FastLED/FastLED
 
 // ***************** USER CONFIG SECTION ********************************* //
+// Max Pixels: Test Strip: 96
+// Max Pixels: PPG Strip: 270
 #define PIN_LED_DATA 6
 
-
+// To use as a single strip;
+// set PPG_SECTIONS, PPG_NODES_PER_SECTION, PPG_CLUSTERS_PER_NODE to 1 and
+// set PPG_PIXELS_PER_CLUSTER to max pixels in the strip
+// Use the defaults for air conception paramotor like spars
+// Experiment with values otherwise :p
 #define PPG_PIXELS_PER_CLUSTER 15 // 15: Length of spar strips
-#define PPG_CLUSTERS_PER_NODE 3   //  3: Front, Back, Side
-#define PPG_NODES_PER_SECTION 2   //  2: Left, Right
-#define PPG_SECTIONS 3            //  3: Left, Top, Right
+#define PPG_CLUSTERS_PER_NODE 3   //  3: Front, Back, Side of the spar
+#define PPG_NODES_PER_SECTION 2   //  2: Left, Right spars (cw) (Note, some algs need 6 total nodes)
+#define PPG_SECTIONS 3            //  3: Left, Top, Right (Note, some algs assume 3 sections)
 #define PPG_NODES (PPG_SECTIONS * PPG_NODES_PER_SECTION)   // sections * 2  = 6
 #define PPG_CLUSTERS (PPG_NODES * PPG_CLUSTERS_PER_NODE)   // nodes * 3     = 18
 #define PPG_PIXELS (PPG_CLUSTERS * PPG_PIXELS_PER_CLUSTER) // clusters * 15 = 270
 
-#define PPG_LED_MAX_BRIGHTNESS 100 // 0 - 255
+#define PPG_LED_MAX_BRIGHTNESS 100 // 100: 0 - 255
+#define USE_TEST_LEDS false        // true: Test LEDs are different type than the Paramotor so colors are wrong
+#define FLIP_COLORS false          // false: Flips primary/secondary color
+
+// Chose a preset light animation
+enum AnimationPatterns {
+  A_STATIC,  // No animation, just shows a steady light pattern
+  A_CHASER,  // Shift lights aka running lights Becomes STATIC in P_ALT_NODE mode
+  A_FLASH,   // Flip Flop b/w colors
+  A_IMPLODE, // Meteor inward crush
+  A_EXPLODE  // (Default) Meteor outward burst
+};
+// Chose a preset color pattern (some expect specific pixel arrangements)
+enum AnimationColorPatterns {
+  P_XMAS,       // (Needs 3 sections) Candy canes with a sparkling xmas tree in the center
+  P_ALT_NODE,   // (Needs 6 effective nodes total) Becomes STATIC in CHASER mode
+  P_ALT_CLUSTER // (Default) Uses alternating colors
+};
+// Choose a binary color preset to be used in ALT modes
+enum AltColorPresets {
+  C_BF,        // Purple, Cyan
+  C_EVE,       // Pink, Blue
+  C_RETRO,     // Purple, Cyan
+  C_FIRE,      // Orange, Red
+  C_PUMPKIN,   // Orange, Green
+  C_PUMPKIN2,  // Orange, Yellow
+  C_HALLOWEEN, // Orange, Purple
+  C_JOKER,     // Purple, Green
+  C_POLICE,    // Red, Blue
+  C_SPYDER     // (Default) Orange, Blue
+};
+AnimationPatterns useAnimationPattern = AnimationPatterns::A_EXPLODE;
+AnimationColorPatterns useAnimationColorPattern = AnimationColorPatterns::P_ALT_CLUSTER;
+AltColorPresets useAltColorPreset = AltColorPresets::C_SPYDER;
 
 // **************************************************************************************************** //
 // **************************************  GENERAL VARIABLES  ***************************************** //
 // **************************************************************************************************** //
+
+struct BiColor {
+  CRGB col1;
+  CRGB col2;
+};
 
 // Cluster is a group of pixels: i.e. led strip on the paramotor arm
 struct Cluster {
@@ -36,8 +81,8 @@ struct CRGB ledArray[PPG_PIXELS];
 struct Cluster clusterArray[PPG_CLUSTERS];
 
 // Timers
-unsigned long previousMillis = 0;        // will store last time LED was updated
-unsigned long previousMillis2 = 0;       // will store last time LED was updated
+unsigned long previousMillis = 0;  // will store last time LED was updated
+unsigned long previousMillis2 = 0; // will store last time LED was updated
 
 
 // ==================================================================================================== //
@@ -61,7 +106,11 @@ void setup() {
 // Setup the FAST LED stuff
 void setupLEDs() {
   Serial.println("=== setupLEDs()");
-  FastLED.addLeds<NEOPIXEL, PIN_LED_DATA>(ledArray, PPG_PIXELS);
+  if(USE_TEST_LEDS) {
+    FastLED.addLeds<TM1809, PIN_LED_DATA>(ledArray, PPG_PIXELS);   // Test Lights
+  } else {
+    FastLED.addLeds<NEOPIXEL, PIN_LED_DATA>(ledArray, PPG_PIXELS); // Paramotor
+  }
   FastLED.setBrightness(PPG_LED_MAX_BRIGHTNESS);
   clearLEDs();
   FastLED.clear();
@@ -130,10 +179,32 @@ void loop() {
 // Run a pattern depending on the state we are in
 void activateLeds() {
   // Serial.println("=== runPattern()");
-  // animationStatic();
-  animationChaser(true); // True for xmas theme
-  // animationAltFlash();
-  // animationStarBurst(false);
+  switch (useAnimationPattern) {
+    case AnimationPatterns::A_STATIC: {
+      animationStatic();
+      break;
+    }
+    case AnimationPatterns::A_CHASER: {
+      animationChaser();
+      break;
+    }
+    case AnimationPatterns::A_FLASH: {
+      animationAltFlash();
+      break;
+    }
+    case AnimationPatterns::A_IMPLODE: {
+      animationStarBurst(true);
+      break;
+    }
+    case AnimationPatterns::A_EXPLODE: {
+      animationStarBurst(false);
+      break;
+    }
+    default: {
+      animationStarBurst(false);
+      break;
+    }
+  }
 }
 
 
@@ -143,12 +214,11 @@ void activateLeds() {
 
 
 /**
- * @brief
- * Color Pattern: Xmas - green on top, candy cane on sides
+ * Special Color Pattern: Xmas - green on top, candy cane on sides
  * WARNING: Assumes 3 sections!!!
  *
- * @param pos - Position of a pixel in a cluster
  * @param sectionIdx Section that the pixel is in
+ * @param pos - Position of a pixel in a cluster
  * @return CRGB - Color for cluster pixel
  */
 CRGB getColorXmas(byte sectionIdx, byte pos) {
@@ -176,54 +246,52 @@ CRGB getColorXmas(byte sectionIdx, byte pos) {
   }
 }
 
-CRGB getColorSpyder(byte nodeIdx, byte pos, bool inverse) {
-  CRGB spyderBlue = CRGB(35, 50, 80);
-  CRGB spyderOrange = CRGB(255, 100, 0);
-  byte spacing = 8;
+/**
+ * Special Color Pattern: Alternating 6Node - 2 color pattern within 6 nodes
+ * WARNING: Assumes 6 nodes total!!!
+ *
+ * @param nodeIdx - Node that the pixel is in
+ * @param pos - Position of a pixel in a cluster
+ * @return CRGB - Color for cluster pixel
+ */
+CRGB getColorAltNodePattern(byte nodeIdx, byte pos, bool inverse) {
+  byte spacing = 8; // 8
+  BiColor col = getBiColor();
 
-  // Blue on bottom
+  // Blue on bottom if spyder
   if(nodeIdx == 0 || nodeIdx == 5) {
-    // return spyderBlue;
-    return inverse ? spyderOrange : spyderBlue;
+    return inverse ? col.col2 : col.col1;
   }
 
-  // Orange in the middle
+  // Orange in the middle if spyder
   if(nodeIdx == 1 || nodeIdx == 4) {
-    // return spyderOrange;
-    return inverse ? spyderBlue : spyderOrange;
+    return inverse ? col.col1 : col.col2;
   }
 
-  // Orange/Blue Pattern Top
-    if( altPatternDecider(spacing, pos) ^ inverse ) {
-      return spyderBlue;
-    } else {
-      return spyderOrange;
-    }
+  // Orange/Blue Pattern Top if spyder
+  // Using XOR operator to flip colors
+  if( altPatternDecider(spacing, pos) ^ inverse ) {
+    return col.col1;
+  } else {
+    return col.col2;
+  }
 }
 
-CRGB getColorAltPattern(byte pos) {
-  byte spacing = 4;
+/**
+ * Generic Color Pattern: Alternating - 2 color pattern within a cluster
+ *
+ * @param pos - Position of a pixel in a cluster
+ * @return CRGB - Color for cluster pixel
+ */
+CRGB getColorAltClusterPattern(byte pos, bool inverse) {
+  byte spacing = 4; // 4
+  BiColor col = getBiColor();
 
-  // === Brandon Woelfel === //
-  // CRGB col1 = CRGB(100, 0, 255); // Purple
-  // CRGB col2 = CRGB(0, 255, 200); // Cyan
-
-  // === Fireplace === //
-  // CRGB col1 = CRGB(200, 0, 0);  // Red
-  // CRGB col2 = CRGB(255, 80, 0); // Orange
-
-  // === Evelyn === //
-  // CRGB col1 = CRGB(200, 0, 190);
-  // CRGB col2 = CRGB(10, 40, 200);
-
-  // === Spyder === //
-  CRGB col1 = CRGB(35, 50, 80);  // Blue
-  CRGB col2 = CRGB(255, 100, 0); // Orange
-
-  if( altPatternDecider(spacing, pos) ) {
-    return col1;
+  // Using XOR operator to flip colors
+  if( altPatternDecider(spacing, pos) ^ inverse ) {
+    return col.col1;
   } else {
-    return col2;
+    return col.col2;
   }
 }
 
@@ -232,38 +300,74 @@ CRGB getColorAltPattern(byte pos) {
 // ---------------------------------------------------------------------------------------------------- //
 
 
+// Static colors
 void animationStatic() {
   // Serial.println("=== staticColors()");
-  for(byte section = 0; section < PPG_SECTIONS; section++) {
-    for(byte pixel = 0; pixel < PPG_PIXELS_PER_CLUSTER; pixel++) {
-      setSectionPixels(section, pixel, getColorXmas(section, pixel), false);
+  for(byte pixel = 0; pixel < PPG_PIXELS_PER_CLUSTER; pixel++) {
+    switch (useAnimationColorPattern) {
+      case AnimationColorPatterns::P_XMAS: {
+        for(byte section = 0; section < PPG_SECTIONS; section++) {
+          setSectionPixels(section, pixel, getColorXmas(section, pixel), FLIP_COLORS);
+        }
+        break;
+      }
+      case AnimationColorPatterns::P_ALT_NODE: {
+        for(byte node = 0; node < PPG_NODES; node++) {
+          setNodePixels(node, pixel, getColorAltNodePattern(node, pixel, FLIP_COLORS), false);
+        }
+        break;
+      }
+      // case AnimationColorPatterns::P_ALT_CLUSTER: {
+      default: {
+        for(byte section = 0; section < PPG_SECTIONS; section++) {
+          setSectionPixels(section, pixel, getColorAltClusterPattern(pixel, FLIP_COLORS), false);
+        }
+        break;
+      }
     }
   }
   FastLED.show();
 }
 
+// Flip Flop the colors
 void animationAltFlash() {
-  // Serial.println("=== animationSpyder()");
-
-  // Flip Flop
-  int animationSpeed = 400;
+  // Serial.println("=== animationAltFlash()");
+  int animationSpeed = 400; // 400
   static bool inverse = false;
   if (isTime(animationSpeed, previousMillis)) {
     inverse = !inverse;
   }
 
-  for(byte nodeIdx = 0; nodeIdx < PPG_NODES; nodeIdx++) {
-    for(byte pixel = 0; pixel < PPG_PIXELS_PER_CLUSTER; pixel++) {
-      setNodePixels(nodeIdx, pixel, getColorSpyder(nodeIdx, pixel, inverse), false);
+  for(byte pixel = 0; pixel < PPG_PIXELS_PER_CLUSTER; pixel++) {
+    switch (useAnimationColorPattern) {
+      case AnimationColorPatterns::P_XMAS: {
+        for(byte section = 0; section < PPG_SECTIONS; section++) {
+          setSectionPixels(section, pixel, getColorXmas(section, pixel), inverse);
+        }
+        break;
+      }
+      case AnimationColorPatterns::P_ALT_NODE: {
+        for(byte node = 0; node < PPG_NODES; node++) {
+          setNodePixels(node, pixel, getColorAltNodePattern(node, pixel, inverse), false);
+        }
+        break;
+      }
+      // case AnimationColorPatterns::P_ALT_CLUSTER: {
+      default: {
+        for(byte section = 0; section < PPG_SECTIONS; section++) {
+          setSectionPixels(section, pixel, getColorAltClusterPattern(pixel, inverse), false);
+        }
+        break;
+      }
     }
   }
   FastLED.show();
 }
 
-void animationChaser(bool xmasSpecial) {
-  // Serial.println("=== patternXmas()");
-  int animationSpeed = 450 / PPG_PIXELS_PER_CLUSTER * 4;    // 8 msec
-  bool inverse = false;
+// Chaser
+void animationChaser() {
+  // Serial.println("=== animationChaser()");
+  int animationSpeed = 40; // 450 / PPG_PIXELS_PER_CLUSTER * 4;    // 8 msec
 
   bool doRandomDirections = true;
   static int direction = 1;
@@ -278,18 +382,34 @@ void animationChaser(bool xmasSpecial) {
       // Animation Pattern: Shift lights aka running lights
       for (int ledColorIdx = 0; ledColorIdx < PPG_PIXELS_PER_CLUSTER; ledColorIdx++) {
         // Calculate pixel position for current frame
-        byte ledPixelIdx = animFrame + ledColorIdx;
+        byte pixel = animFrame + ledColorIdx;
         if(doRandomDirections) {
-          ledPixelIdx = posOffset + ledColorIdx;
+          pixel = posOffset + ledColorIdx;
         }
-        ledPixelIdx = safePos(ledPixelIdx, 0, PPG_PIXELS_PER_CLUSTER);
-        for(byte sectionIdx = 0; sectionIdx < PPG_SECTIONS; sectionIdx++) {
-          if(xmasSpecial){
-            setSectionPixels(sectionIdx, ledPixelIdx, getColorXmas(sectionIdx, ledColorIdx), inverse);
-          } else {
-            setSectionPixels(sectionIdx, ledPixelIdx, getColorAltPattern(ledColorIdx), inverse);
+        pixel = safePos(pixel, 0, PPG_PIXELS_PER_CLUSTER);
+
+        switch (useAnimationColorPattern) {
+          case AnimationColorPatterns::P_XMAS: {
+            for(byte section = 0; section < PPG_SECTIONS; section++) {
+              setSectionPixels(section, pixel, getColorXmas(section, ledColorIdx), FLIP_COLORS);
+            }
+            break;
+          }
+          case AnimationColorPatterns::P_ALT_NODE: {
+            for(byte node = 0; node < PPG_NODES; node++) {
+              setNodePixels(node, pixel, getColorAltNodePattern(node, ledColorIdx, FLIP_COLORS), false);
+            }
+            break;
+          }
+          // case AnimationColorPatterns::P_ALT_CLUSTER: {
+          default: {
+            for(byte section = 0; section < PPG_SECTIONS; section++) {
+              setSectionPixels(section, pixel, getColorAltClusterPattern(ledColorIdx, false), FLIP_COLORS);
+            }
+            break;
           }
         }
+
       }
 
       FastLED.show();
@@ -302,16 +422,18 @@ void animationChaser(bool xmasSpecial) {
   }
 }
 
+// Meteor Burst/Collapse(if inverse)
 void animationStarBurst(bool inverse) {
+  // Serial.println("=== animationStarBurst()");
   inverse = !inverse;
   CRGB meteorColor = CRGB(100, 0, 255); // Purple
   CRGB meteorColor2 = CRGB(255, 80, 0); // Orange
   byte meteorSize = 1; // Pixels
   // A larger number makes the tail short and/or disappear faster.
   // Theoretically a value of 64 should reduce the brightness by 25% for each time the meteor gets drawn.
-  byte meteorTrailDecay = 100;      // msec
+  byte meteorTrailDecay = 100; // 100 msec
   boolean meteorRandomDecay = true;
-  byte animationSpeed = 75; // msec
+  byte animationSpeed = 75; // 75 msec
 
   byte led_start = 0;
   byte led_end = led_start + PPG_PIXELS_PER_CLUSTER;
@@ -338,17 +460,46 @@ void animationStarBurst(bool inverse) {
         // Fit the meteor within the bounds (cut off, no wrap)
         byte pos = animFrame-j;
         if ( ( pos < led_end) && (pos >= led_start) ) {
+
+          switch (useAnimationColorPattern) {
+            case AnimationColorPatterns::P_XMAS: {
+              for(byte sectionIdx = 0; sectionIdx < PPG_SECTIONS; sectionIdx++) {
+                bool splitInverse = inverse;
+                if(sectionIdx == 1){splitInverse = !splitInverse; }
+                setSectionPixels(sectionIdx, pos, getColorXmas(sectionIdx, pos), splitInverse);
+              }
+              break;
+            }
+            case AnimationColorPatterns::P_ALT_NODE: {
+              for(byte nodeIdx = 0; nodeIdx < PPG_NODES; nodeIdx++) {
+                setNodePixels(nodeIdx, pos, getColorAltNodePattern(nodeIdx, pos, inverse), false);
+              }
+              break;
+            }
+            // case AnimationColorPatterns::P_ALT_CLUSTER: {
+            default: {
+              for(byte sectionIdx = 0; sectionIdx < PPG_SECTIONS; sectionIdx++) {
+                bool splitInverse = inverse;
+                if(sectionIdx == 1){splitInverse = !splitInverse; }
+                setSectionPixels(sectionIdx, pos, getColorAltClusterPattern(pos, FLIP_COLORS), splitInverse);
+              }
+              break;
+            }
+          }
+
           // Activate all the sections at once
           // setAllSectionPixels(pos, meteorColor2, inverse);
+
           // Alt Colors
-          for(byte sectionIdx = 0; sectionIdx < PPG_SECTIONS; sectionIdx++) {
-            bool splitInverse = inverse;
-            if(sectionIdx == 1){splitInverse = !splitInverse; }
-            setSectionPixels(sectionIdx, pos, getColorAltPattern(pos), splitInverse);
-          }
+          // for(byte sectionIdx = 0; sectionIdx < PPG_SECTIONS; sectionIdx++) {
+          //   bool splitInverse = inverse;
+          //   if(sectionIdx == 1){splitInverse = !splitInverse; }
+          //   setSectionPixels(sectionIdx, pos, getColorAltClusterPattern(pos), splitInverse);
+          // }
+
           // Spyder Colors
           // for(byte nodeIdx = 0; nodeIdx < PPG_NODES; nodeIdx++) {
-          //   setNodePixels(nodeIdx, pos, getColorSpyder(nodeIdx, pos, inverse), false);
+          //   setNodePixels(nodeIdx, pos, getColorAltNodePattern(nodeIdx, pos, inverse), false);
           // }
         }
       }
@@ -366,9 +517,77 @@ void animationStarBurst(bool inverse) {
 // ======================================== Helper Functions ========================================== //
 // ---------------------------------------------------------------------------------------------------- //
 
+/** @return color preset based on global user config */
+BiColor getBiColor(){
+  BiColor col = {
+    CRGB(255, 255, 255), // White
+    CRGB(255, 255, 255)  // White
+  };
+
+  switch (useAltColorPreset) {
+    case AltColorPresets::C_BF: {
+      // === Brandon Woelfel === //
+      col.col1 = CRGB(100, 0, 255); // Purple
+      col.col2 = CRGB(0, 255, 200); // Cyan
+      break;
+    }
+    case AltColorPresets::C_EVE: {
+      col.col1 = CRGB(200, 0, 190); // Pink
+      col.col2 = CRGB(10, 40, 200); // Blue
+      break;
+    }
+    case AltColorPresets::C_RETRO: {
+      col.col1 = CRGB(200, 0, 190); // Pink
+      col.col2 = CRGB(0, 255, 200); // Cyan
+      break;
+    }
+    case AltColorPresets::C_FIRE: {
+      col.col1 = CRGB(255, 80, 0); // Orange
+      col.col2 = CRGB(200, 0, 0);  // Red
+      break;
+    }
+    case AltColorPresets::C_PUMPKIN: {
+      col.col1 = CRGB(255, 80, 0); // Orange
+      col.col2 = CRGB(0, 200, 0); // Green
+      break;
+    }
+    case AltColorPresets::C_PUMPKIN2: {
+      col.col1 = CRGB(255, 80, 0); // Orange
+      col.col2 = CRGB(255, 150, 0); // Yellow
+      break;
+    }
+    case AltColorPresets::C_HALLOWEEN: { // Boo!
+      col.col1 = CRGB(255, 80, 0);  // Orange
+      // col.col2 = CRGB(100, 0, 255); // Purple
+      col.col2 = CRGB(121, 2, 181); // Purple
+      break;
+    }
+    case AltColorPresets::C_POLICE: { // O.o wee woo wee woo
+      col.col1 = CRGB(200, 0, 0);   // Red
+      col.col2 = CRGB(10, 40, 200); // Blue
+      break;
+    }
+    case AltColorPresets::C_JOKER: { // Why so Serious?
+      col.col1 = CRGB(100, 0, 255); // Purple
+      col.col2 = CRGB(0, 200, 0); // Green
+      break;
+    }
+    case AltColorPresets::C_SPYDER: {
+      col.col1 = CRGB(255, 100, 0); // Orange
+      col.col2 = CRGB(35, 50, 80);  // Blue
+      break;
+    }
+    default: {
+      col.col1 = CRGB(255, 0, 0); // Red
+      col.col2 = CRGB(0, 0, 0);   // Green
+      break;
+    }
+  }
+  return col;
+}
+
 /**
- * @brief Checks if the amount of time has passed
- *
+ * Checks if the amount of time has passed
  * @param delay - Amount of time to pass to return true
  * @param previousMillis - Updates a new value after true
  * @return true
