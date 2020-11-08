@@ -2,10 +2,21 @@
 #include <Arduino.h>
 #include <FastLED.h> //https://github.com/FastLED/FastLED
 
-// ***************** USER CONFIG SECTION ********************************* //
+// Device presets, use only 1!
+#include "arduino-led_preset-ppg.h"
+// #include "arduino-led_preset-test.h"
+
+// **************************************************************************************************** //
+// *************************************  USER CONFIG SECTION  **************************************** //
+// **************************************************************************************************** //
 // Max Pixels: Test Strip: 96
 // Max Pixels: PPG Strip: 270
 #define PIN_LED_DATA 6
+
+// Defaults for ppg
+// If importing a device preset above, this define section will NOT be used.
+#ifndef PRESET_H
+#define PRESET_H
 
 // To use as a single strip;
 // set PPG_SECTIONS, PPG_NODES_PER_SECTION, PPG_CLUSTERS_PER_NODE to 1 and
@@ -23,6 +34,8 @@
 #define PPG_LED_MAX_BRIGHTNESS 100 // 100: 0 - 255
 #define USE_TEST_LEDS false        // true: Test LEDs are different type than the Paramotor so colors are wrong
 #define FLIP_COLORS false          // false: Flips primary/secondary color
+
+#endif
 
 // Chose a preset light animation
 enum AnimationPatterns {
