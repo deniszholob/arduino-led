@@ -3,6 +3,7 @@
 #ifndef PRESET_H
 #define PRESET_H
 
+// Max Pixels: PPG Strip: 270
 #define PPG_PIXELS_PER_CLUSTER 15 // 15: Length of spar strips
 #define PPG_CLUSTERS_PER_NODE 3   //  3: Front, Back, Side of the spar
 #define PPG_NODES_PER_SECTION 2   //  2: Left, Right spars (cw) (Note, some algs need 6 total nodes)

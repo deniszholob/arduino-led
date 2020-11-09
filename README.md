@@ -9,25 +9,31 @@ See working [animation code on a Paramotor Frame](https://youtu.be/QCYgQ3sWGrA) 
 
 ---------------------------------------
 # How to Program the Arduino Boards
+## Prerequisites
+* Install [Arduino IDE](https://www.arduino.cc/en/software)
+* Open the IDE then click `Tools` -> `Manage Libraries...` -> Search for and install `FastLED` by Daniel Garcia
+
 ## With [Arduino IDE](https://www.arduino.cc/en/software)
-* File -> Open... (Browse to the [arduino-led.ino](./arduino-led.ino))
+Make sure you can upload code in Arduino IDE first
+* Open the IDE then click `File` -> `Open...` (Browse to the [arduino-led.ino](./arduino-led.ino))
 * Connect your arduino via USB
-* Tools -> Board -> (Choose your board, this was coded for the `Arduino Nano`)
-* Tools -> Programmer -> `AVRISP mkII`
-* Port -> (Chose the COM port of the arduino)
+* `Tools` -> `Board` -> (Choose your board, this was coded for the `Arduino Nano`)
+* `Tools` -> `Programmer` -> Choose `AVRISP mkII` for the Nano
+* `Tools` -> `Port` -> (Chose the COM port of the arduino)
 * CLick the Upload `->` Icon (Top left corner) to upload the code to the Arduino Board.
 
 ## With [VSCode](https://code.visualstudio.com/)
-* File -> Open Workspace... (Browse to this top level folder))
-* Install the [recommended extensions](./.vscode/extensions.json)
-* Change the paths in [c_cpp_properties.json](./.vscode/c_cpp_properties.json)
-* If needed change values in [arduino.json](./.vscode/arduino.json)
+VSCode is more friendly to code in, so after setting up Arduino IDE you can switch over.
+* Open VSCode then click `File` -> `Open Folder...` (Browse to this top level folder))
+* Install the workspace recommended extensions (VSCode should ask). They are defined [here](./.vscode/extensions.json) for reference
 * Connect your arduino via USB
+* Change the paths in [c_cpp_properties.json](./.vscode/c_cpp_properties.json) appropriate for your system.
+* If needed change values in [arduino.json](./.vscode/arduino.json). Extension will also display the Port, Programmer and Board at the bottom of the screen to switch between.
 * Open [arduino-led.ino](./arduino-led.ino)
 * Click the Upload Icon (Top right corner) to upload the code to the Arduino Board.
 
 ## Changing Colors/Patterns/Code
-* Everything is done in [arduino-led.ino](./arduino-led.ino)
+* Everything is done in [arduino-led.ino](./arduino-led/arduino-led.ino)
 * Specific LED strip presets can be imported, or not and used the default #defines for LED setup
 * Color/Patters preset selections follow after
 * General code is the rest

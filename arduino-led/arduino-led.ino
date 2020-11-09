@@ -37,32 +37,33 @@
 
 #endif
 
-// Chose a preset light animation
+// Choose a preset light animation
 enum AnimationPatterns {
   A_STATIC,  // No animation, just shows a steady light pattern
   A_CHASER,  // Shift lights aka running lights Becomes STATIC in P_ALT_NODE mode
-  A_FLASH,   // Flip Flop b/w colors
+  A_FLASH,   // Flip Flop b/w colors (Try with C_POLICE :p)
   A_IMPLODE, // Meteor inward crush
   A_EXPLODE  // (Default) Meteor outward burst
 };
 // Chose a preset color pattern (some expect specific pixel arrangements)
 enum AnimationColorPatterns {
-  P_XMAS,       // (Needs 3 sections) Candy canes with a sparkling xmas tree in the center
-  P_ALT_NODE,   // (Needs 6 effective nodes total) Becomes STATIC in CHASER mode
-  P_ALT_CLUSTER // (Default) Uses alternating colors
+  P_XMAS,       // (Needs 3 sections) SPECIAL - Candy canes with a sparkling xmas tree in the center - AltColorPresets, AnimationPatterns have no effect
+  P_ALT_NODE,   // (Needs 6 effective nodes total) Becomes STATIC in CHASER mode, uses AltColorPresets
+  P_ALT_CLUSTER // (Default) Recommended, uses AltColorPresets
 };
-// Choose a binary color preset to be used in ALT modes
+// Choose a binary color preset to be used in ALT AnimationColorPatterns modes, add more to getBiColor()
 enum AltColorPresets {
-  C_BF,        // Purple, Cyan
-  C_EVE,       // Pink, Blue
-  C_RETRO,     // Purple, Cyan
-  C_FIRE,      // Orange, Red
-  C_PUMPKIN,   // Orange, Green
-  C_PUMPKIN2,  // Orange, Yellow
-  C_HALLOWEEN, // Orange, Purple
-  C_JOKER,     // Purple, Green
-  C_POLICE,    // Red, Blue
-  C_SPYDER     // (Default) Orange, Blue
+  C_BF,         // Purple, Cyan
+  C_EVE,        // Pink, Blue
+  C_RETRO,      // Purple, Cyan
+  C_FIRE,       // Orange, Red
+  C_PUMPKIN,    // Orange, Green
+  C_PUMPKIN2,   // Orange, Yellow
+  C_HALLOWEEN,  // Orange, Purple
+  C_JOKER,      // Purple, Green
+  C_POLICE,     // Red, Blue (Try with A_FLASH)
+  C_CANDY_CANE, // Red, White
+  C_SPYDER      // (Default) Orange, Blue
 };
 AnimationPatterns useAnimationPattern = AnimationPatterns::A_EXPLODE;
 AnimationColorPatterns useAnimationColorPattern = AnimationColorPatterns::P_ALT_CLUSTER;
@@ -575,14 +576,19 @@ BiColor getBiColor(){
       col.col2 = CRGB(121, 2, 181); // Purple
       break;
     }
+    case AltColorPresets::C_JOKER: { // Why so Serious?
+      col.col1 = CRGB(100, 0, 255); // Purple
+      col.col2 = CRGB(0, 200, 0); // Green
+      break;
+    }
     case AltColorPresets::C_POLICE: { // O.o wee woo wee woo
       col.col1 = CRGB(200, 0, 0);   // Red
       col.col2 = CRGB(10, 40, 200); // Blue
       break;
     }
-    case AltColorPresets::C_JOKER: { // Why so Serious?
-      col.col1 = CRGB(100, 0, 255); // Purple
-      col.col2 = CRGB(0, 200, 0); // Green
+    case AltColorPresets::C_CANDY_CANE: { // Jingle all the way
+      col.col1 = CRGB(255, 0, 0);     // Red
+      col.col2 = CRGB(255, 255, 255); // White
       break;
     }
     case AltColorPresets::C_SPYDER: {
