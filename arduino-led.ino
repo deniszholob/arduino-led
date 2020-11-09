@@ -2,7 +2,7 @@
 #include <Arduino.h>
 #include <FastLED.h> //https://github.com/FastLED/FastLED
 
-// Device presets, use only 1!
+// LED Strip presets, use only 1!
 #include "arduino-led_preset-ppg.h"
 // #include "arduino-led_preset-test.h"
 

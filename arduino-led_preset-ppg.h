@@ -1,4 +1,4 @@
-// Device preset for: PPG AC Nitro 200 that have "ws2815" chipset leds
+// LED strip preset for: PPG AC Nitro 200 that have "ws2815" chipset leds
 
 #ifndef PRESET_H
 #define PRESET_H

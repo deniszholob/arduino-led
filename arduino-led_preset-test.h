@@ -1,4 +1,4 @@
-// Device preset for: Test lights that have "TM1809" chipset leds
+// LED strip preset for: Test lights that have "TM1809" chipset leds
 
 #ifndef PRESET_H
 #define PRESET_H
