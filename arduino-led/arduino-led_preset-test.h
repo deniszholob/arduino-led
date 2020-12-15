@@ -8,6 +8,7 @@
 #define PPG_CLUSTERS_PER_NODE 1   //  3: Front, Back, Side of the spar
 #define PPG_NODES_PER_SECTION 6   //  2: Left, Right spars (cw) (Note, some algs need 6 total nodes)
 #define PPG_SECTIONS 1            //  3: Left, Top, Right (Note, some algs assume 3 sections)
+
 #define PPG_NODES (PPG_SECTIONS * PPG_NODES_PER_SECTION)   // sections * 2  = 6
 #define PPG_CLUSTERS (PPG_NODES * PPG_CLUSTERS_PER_NODE)   // nodes * 3     = 18
 #define PPG_PIXELS (PPG_CLUSTERS * PPG_PIXELS_PER_CLUSTER) // clusters * 15 = 270

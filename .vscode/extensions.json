@@ -1,7 +1,7 @@
 {
-    "recommendations": [
-        "vsciot-vscode.vscode-arduino",
-        "ms-vscode.cpptools",
-        "austin.code-gnu-global",
-    ]
+  "recommendations": [
+    "vsciot-vscode.vscode-arduino",
+    "ms-vscode.cpptools",
+    "austin.code-gnu-global",
+  ]
 }
